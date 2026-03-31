@@ -42,7 +42,7 @@ pub fn build_detail(nif: &str, name: &str, year: usize, r: &CsvRecord) -> Result
 
     let asset_type = if r.asset_type.is_empty() { "V" } else { &r.asset_type };
     write_str(&mut f, 102, 102, asset_type);
-    let asset_subtype: usize = r.asset_subtype.parse().unwrap_or(1);
+    let asset_subtype: usize = if asset_type == "I" { 0 } else { r.asset_subtype.parse().unwrap_or(1) };
     write_num(&mut f, 103, 103, asset_subtype);
 
     write_str(&mut f, 129, 130, &r.country_code);
@@ -65,7 +65,11 @@ pub fn build_detail(nif: &str, name: &str, year: usize, r: &CsvRecord) -> Result
     };
     if !ec.is_empty() { write_str(&mut f, 413, 414, &ec); }
 
-    write_num(&mut f, 415, 422, r.first_acquisition_date.parse().unwrap_or(0));
+    if r.first_acquisition_date != "0" {
+        write_num(&mut f, 415, 422, r.first_acquisition_date.parse().unwrap_or(0));
+    } else {
+        write_num(&mut f, 415, 422, 0);
+    }
     write_str(&mut f, 423, 423, if r.acquisition_type.is_empty() { "A" } else { &r.acquisition_type });
     write_num(&mut f, 424, 431, 0);
 
@@ -80,7 +84,7 @@ pub fn build_detail(nif: &str, name: &str, year: usize, r: &CsvRecord) -> Result
 
     if !r.stock_representation.is_empty() { write_str(&mut f, 462, 462, &r.stock_representation); }
 
-    let qty = Decimal::from_str(&r.quantity)?;
+    let qty = Decimal::from_str(&r.quantity)?.round_dp(2);
     let (_, qi, qf) = split_decimal(qty);
     write_num(&mut f, 463, 472, qi);
     write_num(&mut f, 473, 474, qf);

@@ -44,7 +44,10 @@ pub fn reverse_from_bytes(data: &[u8]) -> Result<(String, String, String, Vec<Cs
             company_name: read_field(line, 190, 230),
             isin: read_field(line, 132, 143),
             country_code: read_field(line, 129, 130),
-            first_acquisition_date: read_field(line, 415, 422),
+            first_acquisition_date: {
+                let d = read_field(line, 415, 422);
+                if d == "00000000" { "0".into() } else { d }
+            },
             acquisition_type: read_field(line, 423, 423),
             value_in_euro: read_decimal(line, 432, 433, 444, 445, 446),
             quantity: {

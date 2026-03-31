@@ -79,23 +79,22 @@ pub fn validate(r: &CsvRecord) -> Result<()> {
     {
         bail!("Invalid NIF '{}': expected 8 digits + 1 letter", r.nif);
     }
-    // ISIN: exactly 12 alphanumeric
-    if r.isin.len() != 12 || !r.isin.chars().all(|c| c.is_ascii_alphanumeric()) {
-        bail!("Invalid ISIN '{}': expected 12 alphanumeric characters", r.isin);
-    }
+
     // country_code: exactly 2 uppercase letters
     if r.country_code.len() != 2 || !r.country_code.chars().all(|c| c.is_ascii_uppercase()) {
         bail!("Invalid country_code '{}': expected 2 uppercase letters", r.country_code);
     }
-    // first_acquisition_date: 8 digits, valid YYYYMMDD
-    if r.first_acquisition_date.len() != 8 || !r.first_acquisition_date.chars().all(|c| c.is_ascii_digit()) {
-        bail!("Invalid date '{}': expected YYYYMMDD", r.first_acquisition_date);
-    }
-    let y: u32 = r.first_acquisition_date[..4].parse().unwrap_or(0);
-    let m: u32 = r.first_acquisition_date[4..6].parse().unwrap_or(0);
-    let d: u32 = r.first_acquisition_date[6..8].parse().unwrap_or(0);
-    if y < 1900 || m < 1 || m > 12 || d < 1 || d > 31 {
-        bail!("Invalid date '{}': out of range", r.first_acquisition_date);
+    // first_acquisition_date: "0" (empty) or 8 digits, valid YYYYMMDD
+    if r.first_acquisition_date != "0" {
+        if r.first_acquisition_date.len() != 8 || !r.first_acquisition_date.chars().all(|c| c.is_ascii_digit()) {
+            bail!("Invalid date '{}': expected YYYYMMDD", r.first_acquisition_date);
+        }
+        let y: u32 = r.first_acquisition_date[..4].parse().unwrap_or(0);
+        let m: u32 = r.first_acquisition_date[4..6].parse().unwrap_or(0);
+        let d: u32 = r.first_acquisition_date[6..8].parse().unwrap_or(0);
+        if y < 1900 || m < 1 || m > 12 || d < 1 || d > 31 {
+            bail!("Invalid date '{}': out of range", r.first_acquisition_date);
+        }
     }
     // acquisition_type
     if !matches!(r.acquisition_type.as_str(), "A" | "M" | "C") {
@@ -146,13 +145,6 @@ mod tests {
         let mut r = valid_record();
         r.nif = "BADNIF".into();
         assert!(validate(&r).unwrap_err().to_string().contains("Invalid NIF"));
-    }
-
-    #[test]
-    fn test_validate_invalid_isin_length() {
-        let mut r = valid_record();
-        r.isin = "SHORT".into();
-        assert!(validate(&r).unwrap_err().to_string().contains("Invalid ISIN"));
     }
 
     #[test]
